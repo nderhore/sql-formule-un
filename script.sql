@@ -7,8 +7,10 @@ CREATE TABLE circuit(
     circuit_id INTEGER AUTO_INCREMENT PRIMARY KEY,
     pays VARCHAR(255),
     nom VARCHAR(255),
-    longueur FLOAT
+    longueur FLOAT #en km
 );
+
+
 
 # creation table course
 CREATE TABLE course(
@@ -47,18 +49,19 @@ CREATE TABLE course_pilote(
     CONSTRAINT course_pilote_pk PRIMARY KEY (pilote_id,course_id)
 );
 
-CREATE VIEW toto AS (
-SELECT *
-FROM course
-                    );
+#creation d'un index : augmentation des performance
+# attention, cela prend de la place sur le disque
+CREATE INDEX index_pays ON circuit(pays);
 
-CREATE VIEW vue_course_circuit AS (
-SELECT c.nom, c.date_course, ci.nom as 'nom circuit',ci.longueur
-FROM course c
-INNER JOIN circuit ci ON c.circuit_id = ci.circuit_id
-                    );
+#je sais à l'avance que je vais avoir besoin de lancer x fois la requete
 
-SELECT * from toto;
-SELECT * from vue_course_circuit;
-INSERT INTO circuit (pays, nom, longueur) VALUE ('France','Jose',2.5);
+CREATE VIEW score_pilote AS
+(SELECT p.nom as 'nom_pilote', p.prenom, c.nom as 'nom_course', c.date_course, cp.position_pilote
+FROM pilote as p
+JOIN course_pilote as cp ON p.pilote_id = cp.pilote_id
+JOIN course as c ON c.course_id = cp.course_id);
+
+INSERT INTO circuit (pays, nom, longueur) VALUES ('France','Jose',2.5),
+                                                 ('France','Josette',2.5),
+                                                    ('France','Herve',2.5);
 INSERT INTO course (nom, date_course, circuit_id) VALUE ('test',CURDATE(),1);
