@@ -58,10 +58,9 @@ CREATE TABLE course_pilote(
 CREATE INDEX index_pays ON circuit(pays);
 
 #je sais à l'avance que je vais avoir besoin de lancer x fois la requete
-
 CREATE VIEW score_pilote AS
 (SELECT p.nom as 'nom_pilote', p.prenom, c.nom as 'nom_course', c.date_course, cp.position_pilote
-FROM pilote as p
+FROM pilote p
 JOIN course_pilote as cp ON p.pilote_id = cp.pilote_id
 JOIN course as c ON c.course_id = cp.course_id);
 
@@ -86,8 +85,6 @@ INSERT INTO pilote (nom, prenom, nationalite, date_naissance, equipe_id) VALUE (
                                                                                'Francaise',
                                                                                '2023-10-09',
                                                                                1);
-
-
 
 #automatisation du compteur suite à une nouvelle insertion dans course_pilote
 CREATE OR REPLACE TRIGGER update_compteur_pilote
@@ -114,6 +111,39 @@ SELECT * FROM score_pilote;
 
 #affichage de toutes les données pilote
 SELECT * FROM pilote;
+
+# Event : un event est effectué tous les x temps (secondes, minutes, heure , jour, mois, années , ...)
+# Chaque semaine, josé souhaite avoir dans une table "historique" les temps records de chaque pilote
+# Il est demandé de pouvoir obtenir le meilleur temps par pilote, peu importe le circuit ou le pays
+# Vous devrez stocker : le nom, prenom , nationalité et le meilleur temps du / des pilotes
+
+#1. Creation du champ
+ALTER TABLE course_pilote ADD COLUMN temps_course TIME NOT NULL DEFAULT '00:00:00';
+
+#2. Creation de la table
+CREATE OR REPLACE TABLE historique(
+    nom VARCHAR(255),
+    prenom VARCHAR(255),
+    nationalite VARCHAR(255),
+    best_time TIME
+);
+
+#2. un jeu de données
+UPDATE course_pilote SET temps_course = '00:05:00' WHERE pilote_id = 1 AND course_id = 1;
+UPDATE course_pilote SET temps_course = '01:00:00' WHERE pilote_id = 1 AND course_id = 2;
+UPDATE course_pilote SET temps_course = '00:02:00' WHERE pilote_id = 2 AND course_id = 2;
+
+# 3. Etablissement de l'evenement
+CREATE OR REPLACE EVENT bestTimeHistoryByPilote
+ON SCHEDULE EVERY 1 MINUTE
+DO
+DELETE FROM historique WHERE 1=1;
+INSERT INTO historique (
+SELECT p.nom, p.prenom, p.nationalite, MIN(cp.temps_course)
+FROM course_pilote cp
+JOIN pilote p ON p.pilote_id = cp.pilote_id
+GROUP BY p.pilote_id
+);
 
 
 
